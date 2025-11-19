@@ -210,6 +210,23 @@ function App() {
   const leftEditorRef = useRef<HTMLDivElement>(null)
   const rightEditorRef = useRef<HTMLDivElement>(null)
 
+  const displaySingleFile = (text: string, side: "left" | "right") => {
+    const lines = text.split("\n")
+    const fileLines: DiffLine[] = lines.map((line, index) => ({
+      lineNumber: index + 1,
+      content: line,
+      type: "unchanged" as const,
+      oldLineNumber: side === "left" ? index + 1 : undefined,
+      newLineNumber: side === "right" ? index + 1 : undefined,
+    }))
+
+    if (side === "left") {
+      setLeftDiffLines(fileLines)
+    } else {
+      setRightDiffLines(fileLines)
+    }
+  }
+
   const processDiff = (oldText: string, newText: string) => {
     const diff = diffLines(oldText, newText)
     const leftLines: DiffLine[] = []
@@ -368,15 +385,18 @@ function App() {
 
         if (side === "left") {
           setLeftText(text)
+          displaySingleFile(text, "left")
+          // 오른쪽 파일도 있으면 diff 계산
+          if (rightText) {
+            processDiff(text, rightText)
+          }
         } else {
           setRightText(text)
-        }
-
-        // 두 파일이 모두 로드되면 diff 계산
-        if (side === "left" && rightText) {
-          processDiff(text, rightText)
-        } else if (side === "right" && leftText) {
-          processDiff(leftText, text)
+          displaySingleFile(text, "right")
+          // 왼쪽 파일도 있으면 diff 계산
+          if (leftText) {
+            processDiff(leftText, text)
+          }
         }
       } else {
         // 웹 환경에서는 기존 FileReader 방식 사용
@@ -409,15 +429,18 @@ function App() {
 
         if (side === "left") {
           setLeftText(text)
+          displaySingleFile(text, "left")
+          // 오른쪽 파일도 있으면 diff 계산
+          if (rightText) {
+            processDiff(text, rightText)
+          }
         } else {
           setRightText(text)
-        }
-
-        // 두 파일이 모두 로드되면 diff 계산
-        if (side === "left" && rightText) {
-          processDiff(text, rightText)
-        } else if (side === "right" && leftText) {
-          processDiff(leftText, text)
+          displaySingleFile(text, "right")
+          // 왼쪽 파일도 있으면 diff 계산
+          if (leftText) {
+            processDiff(leftText, text)
+          }
         }
       } catch (error) {
         console.error("Error processing file:", error)
