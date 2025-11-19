@@ -6,6 +6,17 @@ import GlobalStyle from "./styles/GlobalStyle"
 import { diffLines, Change } from "diff"
 import * as XLSX from "xlsx"
 
+// Electron API 타입 정의
+declare global {
+  interface Window {
+    electronAPI?: {
+      platform: string
+      openFileDialog: () => Promise<string | null>
+      readFile: (filePath: string) => Promise<string>
+    }
+  }
+}
+
 const Container = styled.div`
   display: flex;
   width: 100%;
@@ -339,27 +350,97 @@ function App() {
     setChanges(changeSummaries)
   }
 
-  const handleFileUpload = (side: "left" | "right", event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (side: "left" | "right") => {
+    try {
+      // Electron 환경인지 확인
+      if (window.electronAPI) {
+        // Electron dialog 사용
+        const filePath = await window.electronAPI.openFileDialog()
+        if (!filePath) {
+          return // 사용자가 취소
+        }
+
+        const text = await window.electronAPI.readFile(filePath)
+        if (!text) {
+          alert("파일 내용이 비어있습니다.")
+          return
+        }
+
+        if (side === "left") {
+          setLeftText(text)
+        } else {
+          setRightText(text)
+        }
+
+        // 두 파일이 모두 로드되면 diff 계산
+        if (side === "left" && rightText) {
+          processDiff(text, rightText)
+        } else if (side === "right" && leftText) {
+          processDiff(leftText, text)
+        }
+      } else {
+        // 웹 환경에서는 기존 FileReader 방식 사용
+        const input = side === "left" ? leftFileInputRef.current : rightFileInputRef.current
+        if (input) {
+          input.click()
+        }
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error)
+      alert(`파일 업로드 중 오류가 발생했습니다: ${error}`)
+    }
+  }
+
+  const handleFileInputChange = (side: "left" | "right", event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (!file) return
+    if (!file) {
+      return
+    }
 
     const reader = new FileReader()
-    reader.onload = (e) => {
-      const text = e.target?.result as string
-      if (side === "left") {
-        setLeftText(text)
-      } else {
-        setRightText(text)
-      }
 
-      // 두 파일이 모두 로드되면 diff 계산
-      if (side === "left" && rightText) {
-        processDiff(text, rightText)
-      } else if (side === "right" && leftText) {
-        processDiff(leftText, text)
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string
+        if (!text) {
+          alert("파일 내용이 비어있습니다.")
+          return
+        }
+
+        if (side === "left") {
+          setLeftText(text)
+        } else {
+          setRightText(text)
+        }
+
+        // 두 파일이 모두 로드되면 diff 계산
+        if (side === "left" && rightText) {
+          processDiff(text, rightText)
+        } else if (side === "right" && leftText) {
+          processDiff(leftText, text)
+        }
+      } catch (error) {
+        console.error("Error processing file:", error)
+        alert(`파일 처리 중 오류가 발생했습니다: ${error}`)
       }
     }
-    reader.readAsText(file)
+
+    reader.onerror = (error) => {
+      console.error("FileReader error:", error)
+      alert("파일을 읽는 중 오류가 발생했습니다.")
+    }
+
+    try {
+      reader.readAsText(file, "UTF-8")
+    } catch (error) {
+      console.error("Error reading file:", error)
+      alert(`파일 읽기 실패: ${error}`)
+    }
+
+    // 같은 파일을 다시 선택할 수 있도록 리셋
+    if (event.target) {
+      event.target.value = ""
+    }
   }
 
   useEffect(() => {
@@ -434,8 +515,8 @@ function App() {
             ))}
           </EditorContainer>
           <ButtonContainer>
-            <FileInput ref={leftFileInputRef} type="file" accept=".txt,.md,.js,.ts,.jsx,.tsx,.json,.xml,.html,.css" onChange={(e) => handleFileUpload("left", e)} />
-            <Button onClick={() => leftFileInputRef.current?.click()}>문서 업로드</Button>
+            <FileInput ref={leftFileInputRef} type="file" onChange={(e) => handleFileInputChange("left", e)} />
+            <Button onClick={() => handleFileUpload("left")}>문서 업로드</Button>
           </ButtonContainer>
         </Panel>
 
@@ -453,8 +534,8 @@ function App() {
             ))}
           </EditorContainer>
           <ButtonContainer>
-            <FileInput ref={rightFileInputRef} type="file" accept=".txt,.md,.js,.ts,.jsx,.tsx,.json,.xml,.html,.css" onChange={(e) => handleFileUpload("right", e)} />
-            <Button onClick={() => rightFileInputRef.current?.click()}>문서 업로드</Button>
+            <FileInput ref={rightFileInputRef} type="file" onChange={(e) => handleFileInputChange("right", e)} />
+            <Button onClick={() => handleFileUpload("right")}>문서 업로드</Button>
           </ButtonContainer>
         </Panel>
 

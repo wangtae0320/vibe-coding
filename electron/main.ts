@@ -1,7 +1,8 @@
 /** @format */
 
-import { app, BrowserWindow } from "electron"
+import { app, BrowserWindow, dialog, ipcMain } from "electron"
 import * as path from "path"
+import * as fs from "fs"
 
 let mainWindow: BrowserWindow | null = null
 
@@ -36,6 +37,31 @@ app.whenReady().then(() => {
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow()
+    }
+  })
+
+  // IPC handlers
+  ipcMain.handle("dialog:openFile", async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ["openFile"],
+      filters: [
+        { name: "텍스트 파일", extensions: ["txt", "md", "js", "ts", "jsx", "tsx", "json", "xml", "html", "css"] },
+        { name: "모든 파일", extensions: ["*"] },
+      ],
+    })
+
+    if (!result.canceled && result.filePaths.length > 0) {
+      return result.filePaths[0]
+    }
+    return null
+  })
+
+  ipcMain.handle("fs:readFile", async (event, filePath: string) => {
+    try {
+      const content = fs.readFileSync(filePath, "utf-8")
+      return content
+    } catch (error) {
+      throw error
     }
   })
 })
