@@ -22,6 +22,19 @@ const GlobalStyle = createGlobalStyle`
     width: 100%;
     min-height: 100vh;
   }
+
+  .highlight {
+    animation: highlight 2s ease-in-out;
+  }
+
+  @keyframes highlight {
+    0% {
+      background: rgba(255, 255, 0, 0.3);
+    }
+    100% {
+      background: transparent;
+    }
+  }
 `
 
 export default GlobalStyle
