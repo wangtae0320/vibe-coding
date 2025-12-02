@@ -117,13 +117,6 @@ class MainWindow(QMainWindow):
         export_tab_act.triggered.connect(self.export_table_report)
         toolbar.addAction(export_tab_act)
 
-        # 프롬프트 패키지(JSON) 내보내기
-        export_prompt_act = QAction("프롬프트 패키지(JSON)", self)
-        export_prompt_act.triggered.connect(self.export_prompt_templates)
-        toolbar.addAction(export_prompt_act)
-
-        toolbar.addSeparator()
-
         # Zoom 입력
         self.zoom_edit = QLineEdit(f"{self.default_zoom:.2f}")
         self.zoom_edit.setFixedWidth(60)
@@ -139,17 +132,6 @@ class MainWindow(QMainWindow):
         self.sync_btn.setToolTip("두 문서를 동시에 좌/우 페이지 이동 (OFF/ON)")
         self.sync_btn.toggled.connect(self.on_sync_toggled)
         toolbar.addWidget(self.sync_btn)
-
-        # 비교 모드 토글 (Lazy / All)
-        toolbar.addWidget(QLabel(" "))
-        self.mode_btn = QPushButton("Mode: Lazy")
-        self.mode_btn.setCheckable(True)
-        self.mode_btn.setToolTip("비교 모드 전환 (Lazy/All)")
-        self.mode_btn.toggled.connect(self.on_mode_toggled)
-        toolbar.addWidget(self.mode_btn)
-        if self.compare_mode == "all":
-            self.mode_btn.setChecked(True)
-            self.mode_btn.setText("Mode: All")
 
     def _wrap_with_title(self, widget: QWidget, title: str) -> QWidget:
         wrapper = QWidget()
