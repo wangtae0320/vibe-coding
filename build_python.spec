@@ -20,7 +20,7 @@ except ImportError:
     datas_list = []
 
 a = Analysis(
-    ['python.py'],
+    ['main.py'],
     pathex=[],
     binaries=[],
     datas=datas_list,
