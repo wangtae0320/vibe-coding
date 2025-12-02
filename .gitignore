@@ -1,0 +1,21 @@
+node_modules/
+dist/
+release/
+*.log
+.DS_Store
+.env
+.env.local
+*.tsbuildinfo
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+*.egg-info/
+*.spec
+!build_python.spec
+
